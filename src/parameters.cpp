@@ -85,7 +85,7 @@ void readParameters(ros::NodeHandle &nh)
   nh.param<double>("mapping/imu_meas_omg_cov",imu_meas_omg_cov,0.1);
   nh.param<double>("preprocess/blind", p_pre->blind, 1.0);
   nh.param<int>("preprocess/lidar_type", lidar_type, 1);
-  nh.param<int>("preprocess/scan_line", p_pre->N_SCANS, 16);
+  nh.param<int>("preprocess/scan_line", p_pre->N_SCANS, 160);
   nh.param<int>("preprocess/scan_rate", p_pre->SCAN_RATE, 10);
   nh.param<int>("preprocess/timestamp_unit", p_pre->time_unit, 1);
   nh.param<double>("mapping/match_s", match_s, 81);

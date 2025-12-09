@@ -8,7 +8,7 @@
 #include "preprocess.h"
 #include "IMU_Processing.h"
 #include <sensor_msgs/NavSatFix.h>
-#include <livox_ros_driver/CustomMsg.h>
+#include <point_lio/CustomMsg.h>
 #include <sensor_msgs/PointCloud2.h>
 #include <mutex>
 #include <omp.h>

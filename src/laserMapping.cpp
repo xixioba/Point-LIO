@@ -10,7 +10,13 @@
 #include <tf/transform_datatypes.h>
 #include <tf/transform_broadcaster.h>
 #include "li_initialization.h"
+#if __APPLE__
+#include <stdlib.h>
+#include <malloc/malloc.h>
+#define malloc_trim(x) ((void)0)
+#else
 #include <malloc.h>
+#endif
 // #include <cv_bridge/cv_bridge.h>
 // #include "matplotlibcpp.h"
 // #include <ros/console.h>

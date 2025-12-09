@@ -1,7 +1,7 @@
 #include <ros/ros.h>
 #include <pcl_conversions/pcl_conversions.h>
 #include <sensor_msgs/PointCloud2.h>
-#include <livox_ros_driver/CustomMsg.h>
+#include <point_lio/CustomMsg.h>
 
 using namespace std;
 
@@ -10,7 +10,7 @@ using namespace std;
 typedef pcl::PointXYZINormal PointType;
 typedef pcl::PointCloud<PointType> PointCloudXYZI;
 
-enum LID_TYPE{AVIA = 1, VELO16, OUST64, HESAIxt32}; //{1, 2, 3, 4}
+enum LID_TYPE{AVIA = 1, VELO16, OUST64, HESAIxt32, RAYZ_H260, RAYZ_F360}; //{1, 2, 3, 4}
 enum TIME_UNIT{SEC = 0, MS = 1, US = 2, NS = 3};
 enum Feature{Nor, Poss_Plane, Real_Plane, Edge_Jump, Edge_Plane, Wire, ZeroPoint};
 enum Surround{Prev, Next};
@@ -99,6 +99,36 @@ POINT_CLOUD_REGISTER_POINT_STRUCT(ouster_ros::Point,
     (std::uint32_t, range, range)
 )
 
+namespace rayz_ros
+{
+struct EIGEN_ALIGN16 RayzPointRos {
+  PCL_ADD_POINT4D;
+  uint16_t h_angle;
+  uint16_t v_angle;
+  uint16_t range;
+  uint16_t ts_10usec;  // relative to header stamp
+  uint8_t intensity;
+  uint8_t vline;
+  uint8_t pluse;
+  uint8_t reserve;
+  EIGEN_MAKE_ALIGNED_OPERATOR_NEW
+};
+}
+
+POINT_CLOUD_REGISTER_POINT_STRUCT(rayz_ros::RayzPointRos,
+    (float, x, x)
+    (float, y, y)
+    (float, z, z)
+    (uint16_t, h_angle, h_angle)
+    (uint16_t, v_angle, v_angle)
+    (uint16_t, range, range)
+    (uint16_t, ts_10usec, ts_10usec)
+    (uint8_t, intensity, intensity)
+    (uint8_t, vline, vline)
+    (uint8_t, pluse, pluse)
+    (uint8_t, reserve, reserve)
+)
+
 class Preprocess
 {
   public:
@@ -107,18 +137,18 @@ class Preprocess
   Preprocess();
   ~Preprocess();
   
-  void process_cut_frame_livox(const livox_ros_driver::CustomMsg::ConstPtr &msg, deque<PointCloudXYZI::Ptr> &pcl_out, deque<double> &time_lidar, const int required_frame_num, int scan_count);
+  void process_cut_frame_livox(const point_lio::CustomMsg::ConstPtr &msg, deque<PointCloudXYZI::Ptr> &pcl_out, deque<double> &time_lidar, const int required_frame_num, int scan_count);
   
   void process_cut_frame_pcl2(const sensor_msgs::PointCloud2::ConstPtr &msg, deque<PointCloudXYZI::Ptr> &pcl_out, deque<double> &time_lidar, const int required_frame_num, int scan_count);
  
-  void process(const livox_ros_driver::CustomMsg::ConstPtr &msg, PointCloudXYZI::Ptr &pcl_out);
+  void process(const point_lio::CustomMsg::ConstPtr &msg, PointCloudXYZI::Ptr &pcl_out);
   void process(const sensor_msgs::PointCloud2::ConstPtr &msg, PointCloudXYZI::Ptr &pcl_out);
   void set(bool feat_en, int lid_type, double bld, int pfilt_num);
 
   // sensor_msgs::PointCloud2::ConstPtr pointcloud;
   PointCloudXYZI pl_full, pl_corn, pl_surf;
-  PointCloudXYZI pl_buff[128]; //maximum 128 line lidar
-  vector<orgtype> typess[128]; //maximum 128 line lidar
+  PointCloudXYZI pl_buff[192]; //maximum 128 line lidar
+  vector<orgtype> typess[192]; //maximum 128 line lidar
   float time_unit_scale;
   int lidar_type, point_filter_num, N_SCANS, SCAN_RATE, time_unit;
   double blind, det_range;
@@ -127,10 +157,12 @@ class Preprocess
     
 
   private:
-  void avia_handler(const livox_ros_driver::CustomMsg::ConstPtr &msg);
+  void avia_handler(const point_lio::CustomMsg::ConstPtr &msg);
   void oust64_handler(const sensor_msgs::PointCloud2::ConstPtr &msg);
   void velodyne_handler(const sensor_msgs::PointCloud2::ConstPtr &msg);
   void hesai_handler(const sensor_msgs::PointCloud2::ConstPtr &msg);
+  void rayz_handler(const sensor_msgs::PointCloud2::ConstPtr &msg);
+  void rayz_f360_handler(const sensor_msgs::PointCloud2::ConstPtr &msg);
   void give_feature(PointCloudXYZI &pl, vector<orgtype> &types);
   void pub_func(PointCloudXYZI &pl, const ros::Time &ct);
   int  plane_judge(const PointCloudXYZI &pl, vector<orgtype> &types, uint i, uint &i_nex, Eigen::Vector3d &curr_direct);
