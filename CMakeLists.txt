@@ -1,4 +1,4 @@
-cmake_minimum_required(VERSION 2.8.3)
+cmake_minimum_required(VERSION 3.5)
 project(point_lio)
 
 SET(CMAKE_BUILD_TYPE "RelWithDebInfo")
@@ -38,6 +38,18 @@ endif()
 if(APPLE)
     add_compile_options(-Wno-tautological-constant-out-of-range-compare)
     add_compile_options(-Wno-deprecated-declarations)
+endif()
+
+# macOS + Conda Environment Support
+if(APPLE AND DEFINED ENV{CONDA_PREFIX})
+    message(STATUS "Detected macOS conda environment: $ENV{CONDA_PREFIX}")
+    
+    # Add conda include path to compiler flags
+    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -I$ENV{CONDA_PREFIX}/include")
+    set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -I$ENV{CONDA_PREFIX}/include")
+    
+    # Also add to include directories for better IDE support
+    include_directories($ENV{CONDA_PREFIX}/include)
 endif()
 
 find_package(OpenMP QUIET)
