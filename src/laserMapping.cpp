@@ -6,6 +6,7 @@
 #include <pcl/point_cloud.h>
 #include <pcl/point_types.h>
 #include <pcl/filters/voxel_grid.h>
+#include <pcl/filters/approximate_voxel_grid.h>
 #include <pcl/io/pcd_io.h>
 #include <tf/transform_datatypes.h>
 #include <tf/transform_broadcaster.h>
@@ -43,8 +44,9 @@ PointCloudXYZI::Ptr feats_undistort(new PointCloudXYZI());
 PointCloudXYZI::Ptr feats_down_body_space(new PointCloudXYZI());
 PointCloudXYZI::Ptr init_feats_world(new PointCloudXYZI());
 std::deque<PointCloudXYZI::Ptr> depth_feats_world;
-pcl::VoxelGrid<PointType> downSizeFilterSurf;
-pcl::VoxelGrid<PointType> downSizeFilterMap;
+// Use ApproximateVoxelGrid to avoid integer overflow and improve performance
+pcl::ApproximateVoxelGrid<PointType> downSizeFilterSurf;
+pcl::ApproximateVoxelGrid<PointType> downSizeFilterMap;
 
 V3D euler_cur;
 
@@ -487,22 +489,24 @@ int main(int argc, char** argv)
             /*** downsample the feature points in a scan ***/
             t1 = omp_get_wtime();
             p_imu->Process(Measures, feats_undistort);
+            
             if(space_down_sample)
             {
                 downSizeFilterSurf.setInputCloud(feats_undistort);
                 downSizeFilterSurf.filter(*feats_down_body);
-                sort(feats_down_body->points.begin(), feats_down_body->points.end(), time_list); 
+                sort(feats_down_body->points.begin(), feats_down_body->points.end(), time_list);
             }
             else
             {
                 feats_down_body = Measures.lidar;
                 sort(feats_down_body->points.begin(), feats_down_body->points.end(), time_list); 
             }
+            
             {
                 time_seq = time_compressing<int>(feats_down_body);
                 feats_down_size = feats_down_body->points.size();
             }
-
+            
             if (!p_imu->after_imu_init_) // !p_imu->UseLIInit && 
             {
                 if (!p_imu->imu_need_init_)
@@ -562,8 +566,8 @@ int main(int argc, char** argv)
             t2 = omp_get_wtime();
             
             /*** iterated state estimation ***/
-            crossmat_list.reserve(feats_down_size);
-            pbody_list.reserve(feats_down_size);
+            crossmat_list.assign(feats_down_size, M3D::Zero());
+            pbody_list.assign(feats_down_size, V3D::Zero());
             // pbody_ext_list.reserve(feats_down_size);
                           
             for (size_t i = 0; i < feats_down_body->size(); i++)

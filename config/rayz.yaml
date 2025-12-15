@@ -5,7 +5,7 @@ common:
     con_frame_num: 1 # the number of frames combined
     cut_frame: false # true: if you need to cut one LiDAR frame into several subframes
     cut_frame_time_interval: 0.1 # should be integral fraction of 1 / LiDAR frequency
-    time_diff_lidar_to_imu: 0.0 # Time offset between LiDAR and IMU calibrated by other algorithms, e.g., LI-Init (find in Readme)
+    time_diff_lidar_to_imu: 0.0 # From LIDAR_IMU_Init calibration
 
 preprocess:
     lidar_type: 5 # 5
@@ -15,30 +15,41 @@ preprocess:
 
 mapping:
     imu_en: true
-    extrinsic_est_en: true # for aggressive motion, set this variable false
+    extrinsic_est_en: false # Disabled: using calibrated extrinsics
     imu_time_inte: 0.005 # = 1 / frequency of IMU
     lidar_time_inte: 0.1
     satu_acc: 3.0 # the saturation value of IMU's acceleration. not related to the units
     satu_gyro: 35 # the saturation value of IMU's angular velocity. not related to the units
     acc_norm: 9.81 # 9.81 for m/s^2 as unit (confirmed: IMU outputs ~9.75 on z-axis)
-    lidar_meas_cov: 0.01 # 0.001; 0.01
-    acc_cov_output: 500
-    gyr_cov_output: 2000 
+    lidar_meas_cov: 0.001 # 0.001; 0.01
+
+    # 初始协方差 (Initial Covariance) - Increased for robustness
+    acc_cov_output: 1000   # Increased from 500
+    gyr_cov_output: 4000   # Increased from 2000
     b_acc_cov: 0.0001 
     b_gyr_cov: 0.0001 
-    imu_meas_acc_cov: 1.0 #0.1 # 0.1
-    imu_meas_omg_cov: 1.0 #0.01 # 0.1
-    gyr_cov_input: 0.01 # for IMU as input model
-    acc_cov_input: 0.1 # for IMU as input model
-    plane_thr: 0.05 # stricter plane threshold for indoor flat walls
+
+    # Point-LIO 里的 "cov" 通常指协方差 (数值的平方)
+    # 如果轨迹在静止时乱飘，说明 imu_meas_... 设置太小（太相信 IMU 但 IMU 实际上噪声比标的大）
+    # 快速转弯时轨迹跟不上或滞后，说明 gyr_cov_input 或 imu_meas_omg_cov 可能设置得太大了（太不相信 IMU）
+
+    # 1. 测量噪声 (White Noise) - from imu_utils for robustness
+    imu_meas_acc_cov: 0.5       # acc_n² = 0.0005
+    imu_meas_omg_cov: 0.001     # gyr_n² = 0.000001
+    
+    # 2. 零偏随机游走 (Bias Random Walk) - from imu_utils
+    acc_cov_input: 0.0032      # acc_w² = 3.2e-07
+    gyr_cov_input: 0.00032   # gyr_w² = 3.2e-10
+
+    plane_thr: 0.1 # Relaxed for outdoor non-planar surfaces
     match_s: 81
-    ivox_grid_resolution: 0.3 # 0.1 was too dense, 0.3 is better for indoor 5m scenes
-    gravity: [0.0, 0.0, -9.810] # [0.0, 9.810, 0.0] # # [0.0, 0.0, -9.787561] # gvins # 
-    gravity_init: [0.0, 0.0, -9.810] # preknown gravity in the initial IMU frame for unstationary start or in the initial LiDAR frame for using without IMU
-    extrinsic_T: [ 0.0, 0.0, 0.0] # avia # [0.011, 0.02329, -0.04412] # mid360
+    ivox_grid_resolution: 0.5 # Larger for outdoor scenes
+    gravity: [0.0, 0.0, -9.749278] # Vertical: IMU output is pre-rotated, using measured magnitude
+    gravity_init: [0.0, 0.0, -9.749278] # In pre-rotated IMU frame
+    extrinsic_T: [0.035545, 0.002284, 0.023019] # Original initialization result
     extrinsic_R: [ 1, 0, 0,
                    0, 1, 0,
-                   0, 0, 1 ]
+                   0, 0, 1 ] # Identity: rotation pre-compensated in IMU output
 
 odometry: 
     publish_odometry_without_downsample: false

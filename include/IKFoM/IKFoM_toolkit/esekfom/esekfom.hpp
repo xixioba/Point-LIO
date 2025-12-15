@@ -135,6 +135,15 @@ public:
 
 	// iterated error state EKF propogation
 	void predict(double &dt, processnoisecovariance &Q, const input &i_in, bool predict_state, bool prop_cov){
+		// Safety check: ensure state manifold structure has been built
+		if((!x_.vect_state.size())&&(!x_.SO3_state.size())&&(!x_.S2_state.size())&&(!x_.SEN_state.size()))
+		{
+			x_.build_S2_state();
+			x_.build_SO3_state();
+			x_.build_vect_state();
+			x_.build_SEN_state();
+		}
+
 		if (predict_state)
 		{
 			flatted_state f_ = f(x_, i_in);

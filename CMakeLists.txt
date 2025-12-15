@@ -56,8 +56,7 @@ find_package(catkin REQUIRED COMPONENTS
   std_msgs
   pcl_ros
   tf
-  # livox_ros_driver
-  # message_generation
+  message_generation
   eigen_conversions
 )
 
@@ -99,6 +98,7 @@ link_directories(
 add_executable(pointlio_mapping src/laserMapping.cpp 
                 src/li_initialization.cpp src/parameters.cpp src/preprocess.cpp src/Estimator.cpp 
                 src/IMU_Processing.cpp)
+add_dependencies(pointlio_mapping ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_EXPORTED_TARGETS})
 target_link_libraries(pointlio_mapping ${catkin_LIBRARIES} ${PCL_LIBRARIES} ${PYTHON_LIBRARIES})
 target_include_directories(pointlio_mapping PRIVATE ${PYTHON_INCLUDE_DIRS})
 
