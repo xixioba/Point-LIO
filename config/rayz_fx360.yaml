@@ -1,0 +1,65 @@
+common:
+    lid_topic:  "/rayz_points" 
+    imu_topic:  "/rayz_imu" 
+    con_frame: false # true: if you need to combine several LiDAR frames into one
+    con_frame_num: 1 # the number of frames combined
+    cut_frame: false # true: if you need to cut one LiDAR frame into several subframes
+    cut_frame_time_interval: 0.1 # should be integral fraction of 1 / LiDAR frequency
+    time_diff_lidar_to_imu: 0.0 # From LIDAR_IMU_Init calibration
+
+preprocess:
+    lidar_type: 6 # 6 = RAYZ_F360 (48-line hemisphere)
+    scan_line: 48 # 48-line hemisphere lidar
+    timestamp_unit: 1           # the unit of time/t field in the PointCloud2 rostopic: 0-second, 1-milisecond, 2-microsecond, 3-nanosecond.
+    blind: 2.0 
+
+mapping:
+    imu_en: true
+    extrinsic_est_en: false # Disabled: using calibrated extrinsics
+    imu_time_inte: 0.005 # = 1 / frequency of IMU
+    lidar_time_inte: 0.1
+    satu_acc: 3.0 # the saturation value of IMU's acceleration. not related to the units
+    satu_gyro: 35 # the saturation value of IMU's angular velocity. not related to the units
+    acc_norm: 9.81 # 9.81 for m/s^2 as unit (confirmed: IMU outputs ~9.75 on z-axis)
+    lidar_meas_cov: 0.01 # 0.001; 0.01
+
+    # 初始协方差 (Initial Covariance) - Increased for robustness
+    acc_cov_output: 1000   # Increased from 500
+    gyr_cov_output: 2000   # Increased from 2000
+    b_acc_cov: 0.0001 
+    b_gyr_cov: 0.0001 
+
+    # Point-LIO 里的 "cov" 通常指协方差 (数值的平方)
+    # 如果轨迹在静止时乱飘，说明 imu_meas_... 设置太小（太相信 IMU 但 IMU 实际上噪声比标的大）
+    # 快速转弯时轨迹跟不上或滞后，说明 gyr_cov_input 或 imu_meas_omg_cov 可能设置得太大了（太不相信 IMU）
+
+    # 1. 测量噪声 (White Noise) - from imu_utils for robustness
+    imu_meas_acc_cov: 0.01
+    imu_meas_omg_cov: 0.01
+    
+    # 2. 零偏随机游走 (Bias Random Walk) - from imu_utils
+    acc_cov_input: 0.1
+    gyr_cov_input: 0.01
+
+    plane_thr: 0.1 # Relaxed for outdoor non-planar surfaces
+    match_s: 81
+    ivox_grid_resolution: 0.5 # Larger for outdoor scenes
+    gravity: [0.0, 0.0, -9.810] # Vertical: IMU output is pre-rotated, using measured magnitude
+    gravity_init: [0.0, 0.0, -9.810] # In pre-rotated IMU frame
+    extrinsic_T: [0.002048, -0.095893,  0.018497] # Original initialization result
+    extrinsic_R: [ 1, 0, 0,
+                   0, 1, 0,
+                   0, 0, 1 ] # Identity: rotation pre-compensated in IMU output
+
+odometry: 
+    publish_odometry_without_downsample: false
+
+publish:
+    path_en: true                 # false: close the path output
+    scan_publish_en: true         # false: close all the point cloud output
+    scan_bodyframe_pub_en: false  # true: output the point cloud scans in IMU-body-frame
+
+pcd_save:
+    pcd_save_en: false
+    interval: -1                 # how many LiDAR frames saved in each pcd file; 
+                                 # -1 : all frames will be saved in ONE pcd file, may lead to memory crash when having too much frames.

@@ -91,7 +91,7 @@ void Preprocess::process(const sensor_msgs::PointCloud2::ConstPtr &msg, PointClo
     break;
   
   case RAYZ_F360:
-    rayz_f360_handler(msg);
+    rayz_handler(msg);
     break;
 
   default:
@@ -196,39 +196,6 @@ void Preprocess::rayz_handler(const sensor_msgs::PointCloud2::ConstPtr &msg)
           }
         }
       }
-    }
-  }
-}
-
-void Preprocess::rayz_f360_handler(const sensor_msgs::PointCloud2::ConstPtr &msg)
-{
-  pl_surf.clear();
-  pl_corn.clear();
-  pl_full.clear();
-
-  pcl::PointCloud<rayz_ros::RayzPointRos> pl_orig;
-  pcl::fromROSMsg(*msg, pl_orig);
-  int plsize = pl_orig.points.size();
-  if (plsize == 0)
-    return;
-  pl_surf.reserve(plsize);
-
-  for(uint i = 0; i < plsize; ++i)
-  {
-    PointType added_pt;
-    added_pt.normal_x = 0;
-    added_pt.normal_y = 0;
-    added_pt.normal_z = 0;
-    added_pt.x = pl_orig.points[i].x;
-    added_pt.y = pl_orig.points[i].y;
-    added_pt.z = pl_orig.points[i].z;
-    added_pt.intensity = pl_orig.points[i].intensity;
-    added_pt.curvature = pl_orig.points[i].ts_10usec * 0.01;  // 10us to ms
-    // added_pt.curvature = 0.;
-
-    if (added_pt.x * added_pt.x + added_pt.y * added_pt.y + added_pt.z * added_pt.z > (blind * blind))
-    {
-      pl_surf.push_back(std::move(added_pt));
     }
   }
 }

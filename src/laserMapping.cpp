@@ -249,6 +249,18 @@ void publish_frame_body(const ros::Publisher & pubLaserCloudFull_body)
     // publish_count -= PUBFRAME_PERIOD;
 }
 
+void publish_map(const ros::Publisher & pubLaserCloudMap)
+{
+    PointCloudXYZI::Ptr laserCloudMap(new PointCloudXYZI());
+    ivox_->GetAllPoints(laserCloudMap->points);
+    
+    sensor_msgs::PointCloud2 laserCloudmsg;
+    pcl::toROSMsg(*laserCloudMap, laserCloudmsg);
+    laserCloudmsg.header.stamp = ros::Time().fromSec(lidar_end_time);
+    laserCloudmsg.header.frame_id = "camera_init";
+    pubLaserCloudMap.publish(laserCloudmsg);
+}
+
 template<typename T>
 void set_posestamp(T & out)
 {
@@ -1030,6 +1042,7 @@ int main(int argc, char** argv)
             if (path_en)                         publish_path(pubPath);
             if (scan_pub_en || pcd_save_en)      publish_frame_world(pubLaserCloudFullRes);
             if (scan_pub_en && scan_body_pub_en) publish_frame_body(pubLaserCloudFullRes_body);
+            if (init_map)                        publish_map(pubLaserCloudMap);
             
             /*** Debug variables Logging ***/
             if (runtime_pos_log)

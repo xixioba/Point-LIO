@@ -88,6 +88,9 @@ class IVox {
     /// get number of valid grids
     size_t NumValidGrids() const;
 
+    /// get all points from the map
+    void GetAllPoints(PointVector& all_points) const;
+
     /// get statistics of the points
     std::vector<float> StatGridPoints() const;
 
@@ -308,6 +311,26 @@ std::vector<float> IVox<dim, node_type, PointType>::StatGridPoints() const {
     float ave = float(sum) / num;
     float stddev = num > 1 ? sqrt((float(sum_square) - num * ave * ave) / (num - 1)) : 0;
     return std::vector<float>{valid_num, ave, max, min, stddev};
+}
+
+template <int dim, IVoxNodeType node_type, typename PointType>
+size_t IVox<dim, node_type, PointType>::NumPoints() const {
+    size_t num = 0;
+    for (auto& it : grids_cache_) {
+        num += it.second.Size();
+    }
+    return num;
+}
+
+template <int dim, IVoxNodeType node_type, typename PointType>
+void IVox<dim, node_type, PointType>::GetAllPoints(PointVector& all_points) const {
+    all_points.clear();
+    all_points.reserve(NumPoints());
+    for (auto& it : grids_cache_) {
+        for (size_t i = 0; i < it.second.Size(); ++i) {
+            all_points.emplace_back(it.second.GetPoint(i));
+        }
+    }
 }
 
 }  // namespace faster_lio
